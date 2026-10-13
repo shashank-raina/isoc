@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The ISOC calculator: what Microsoft's Integrated Security Operations Center costs</title>
+<meta name="description" content="Work out what Microsoft ISOC would cost you, what the licence includes, and whether moving off Sentinel pays. Covers the Microsoft data tables nobody will confirm.">
+<meta name="author" content="Shashank Raina">
+<link rel="canonical" href="https://CANONICAL_HOST/isoc-calculator/">
+<meta name="robots" content="index,follow">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="The ISOC calculator">
+<meta property="og:description" content="What Microsoft's Integrated Security Operations Center costs, what comes with it, and what it does to your bill.">
+<meta property="og:url" content="https://CANONICAL_HOST/isoc-calculator/">
+<meta property="og:site_name" content="SITE_NAME">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The ISOC calculator">
+<meta name="twitter:description" content="What Microsoft's Integrated Security Operations Center costs, what comes with it, and what it does to your bill.">
+<style>
+/* Layout: inputs rail left, results right, stacking to one column on phones.
+   Two modes, driven by the Sentinel checkbox and body[data-mode]:
+   compare    = has Sentinel today, so stay vs move
+   greenfield = no Sentinel, so cost of ISOC only */
+:root{
+  --paper:#EDF1F3; --surface:#FFFFFF; --sunk:#E3E9EC;
+  --ink:#16252E; --muted:#5A6D78; --line:#D2DCE0;
+  --accent:#116D7C; --accent-soft:#D9EAEC;
+  --good:#2F6B4F; --good-soft:#DCEBE2;
+  --warn:#8A5E14; --warn-soft:#F2E7D0;
+  --font-ui:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0D161C; --surface:#15232B; --sunk:#101B22;
+    --ink:#E4EDF0; --muted:#9DB0BB; --line:#26353E;
+    --accent:#4DADBE; --accent-soft:#113039;
+    --good:#78BC97; --good-soft:#16281F;
+    --warn:#D3A452; --warn-soft:#2C2211;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0D161C; --surface:#15232B; --sunk:#101B22;
+  --ink:#E4EDF0; --muted:#9DB0BB; --line:#26353E;
+  --accent:#4DADBE; --accent-soft:#113039;
+  --good:#78BC97; --good-soft:#16281F;
+  --warn:#D3A452; --warn-soft:#2C2211;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--font-ui);font-size:16px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  padding-inline:16px;padding-block:0;
+}
+.wrap{max-width:1120px;margin:0 auto;padding-block:40px 72px}
+
+body[data-mode="greenfield"] .only-sentinel{display:none}
+body[data-mode="compare"] .only-greenfield{display:none}
+
+header{display:flex;flex-direction:column;gap:10px;margin-bottom:32px}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:1.3px;color:var(--accent);text-transform:uppercase}
+h1{margin:0;font-size:clamp(1.75rem,4vw,2.4rem);font-weight:600;letter-spacing:-.02em;line-height:1.12;text-wrap:balance}
+.stand{margin:0;max-width:64ch;color:var(--muted);font-size:1.02rem;text-wrap:pretty}
+
+.cols{display:grid;grid-template-columns:360px minmax(0,1fr);gap:28px;align-items:start}
+@media(max-width:880px){.cols{grid-template-columns:minmax(0,1fr)}}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:24px}
+.card h2{margin:0 0 4px;font-size:1.05rem;font-weight:600}
+.card .hint{margin:0 0 20px;font-size:.84rem;color:var(--muted)}
+
+.toggle{display:flex;gap:11px;align-items:flex-start;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:13px 14px;margin:0 0 22px;cursor:pointer}
+.toggle:hover{border-color:var(--accent)}
+.toggle input{margin:2px 0 0;width:17px;height:17px;flex:none;accent-color:var(--accent);cursor:pointer}
+.toggle .tlab{font-size:.88rem;font-weight:500;line-height:1.35}
+.toggle small{display:block;font-size:.78rem;font-weight:400;color:var(--muted);margin-top:3px;line-height:1.4}
+
+.field{display:flex;flex-direction:column;gap:7px;margin-bottom:20px}
+.field:last-child{margin-bottom:0}
+.flabel{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.flabel label{font-size:.88rem;font-weight:500}
+.flabel .unit{font-size:.74rem;color:var(--muted);white-space:nowrap}
+.frow{display:flex;gap:10px;align-items:center}
+input[type=number]{
+  width:104px;flex:none;padding:7px 9px;border:1px solid var(--line);border-radius:6px;
+  background:var(--sunk);color:var(--ink);font-family:var(--font-num);font-size:.9rem;
+  font-variant-numeric:tabular-nums;
+}
+input[type=range]{flex:1;min-width:0;accent-color:var(--accent);height:22px}
+input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.note{font-size:.76rem;color:var(--muted);line-height:1.4}
+.note code{font-family:var(--font-num);font-size:.95em}
+
+.subhead{margin:26px 0 14px;padding-top:20px;border-top:1px solid var(--line);font-size:.74rem;font-weight:600;letter-spacing:1.1px;text-transform:uppercase;color:var(--muted)}
+
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}
+.presets button{
+  font-family:inherit;font-size:.8rem;padding:6px 11px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);
+}
+.presets button:hover{border-color:var(--accent);color:var(--accent)}
+
+.verdict{border-radius:10px;padding:24px 26px;margin-bottom:22px;border:1px solid}
+.verdict.good{background:var(--good-soft);border-color:var(--good)}
+.verdict.wait{background:var(--warn-soft);border-color:var(--warn)}
+.verdict.plain{background:var(--accent-soft);border-color:var(--accent)}
+.verdict .vtag{font-size:.72rem;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;display:block;margin-bottom:8px}
+.verdict.good .vtag{color:var(--good)}
+.verdict.wait .vtag{color:var(--warn)}
+.verdict.plain .vtag{color:var(--accent)}
+.verdict h3{margin:0 0 8px;font-size:1.3rem;font-weight:600;letter-spacing:-.01em;line-height:1.2}
+.verdict p{margin:0;font-size:.95rem;line-height:1.5;max-width:60ch}
+.verdict.good h3,.verdict.good p{color:var(--good)}
+.verdict.wait h3,.verdict.wait p{color:var(--warn)}
+.verdict.plain h3,.verdict.plain p{color:var(--accent)}
+
+.allow{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:14px;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+.allow .aname{font-size:.78rem;font-weight:600;color:var(--muted)}
+.allow .anum{font-family:var(--font-num);font-size:1rem;font-weight:500;font-variant-numeric:tabular-nums}
+.allow .atext{font-size:.82rem;color:var(--muted);flex:1 1 260px;min-width:0}
+
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:22px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:5px;min-width:0}
+.tile .tname{font-size:.78rem;font-weight:600;color:var(--muted);letter-spacing:.3px}
+.tile .tnum{font-family:var(--font-num);font-size:1.6rem;font-weight:500;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.tile .tsub{font-size:.76rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.tile.lead{border-color:var(--accent);background:var(--accent-soft)}
+.tile.lead .tname,.tile.lead .tnum,.tile.lead .tsub{color:var(--accent)}
+
+.bars{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:22px 24px;margin-bottom:22px}
+.bars h2{margin:0 0 2px;font-size:1.02rem;font-weight:600}
+.bars .hint{margin:0 0 18px;font-size:.82rem;color:var(--muted)}
+.bar{display:grid;grid-template-columns:132px minmax(0,1fr) 92px;gap:12px;align-items:center;margin-bottom:11px}
+.bar:last-child{margin-bottom:0}
+.bar .blab{font-size:.84rem;color:var(--muted)}
+.bar .btrack{background:var(--sunk);border-radius:4px;height:24px;overflow:hidden}
+.bar .bfill{height:100%;border-radius:4px;background:var(--accent);transition:width .18s ease}
+.bar.alt .bfill{background:var(--muted)}
+.bar .bval{font-family:var(--font-num);font-size:.84rem;text-align:right;font-variant-numeric:tabular-nums}
+@media(max-width:560px){.bar{grid-template-columns:minmax(0,1fr) 88px;grid-template-areas:"lab val" "trk trk"}.bar .blab{grid-area:lab}.bar .bval{grid-area:val}.bar .btrack{grid-area:trk}}
+
+.swing{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:0 10px 10px 0;padding:20px 24px;margin-bottom:22px}
+.swing .sname{font-size:.78rem;font-weight:600;color:var(--warn);letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px}
+.swing .snum{font-family:var(--font-num);font-size:1.5rem;font-weight:500;font-variant-numeric:tabular-nums;margin-bottom:8px}
+.swing p{margin:0;font-size:.9rem;color:var(--muted);max-width:62ch;line-height:1.5}
+
+.feat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:22px 24px;margin-bottom:22px}
+.feat h2{margin:0 0 2px;font-size:1.02rem;font-weight:600}
+.feat .hint{margin:0 0 20px;font-size:.82rem;color:var(--muted)}
+.fgroup{margin-bottom:20px}
+.fgroup:last-child{margin-bottom:0}
+.chip{display:inline-block;font-size:.7rem;font-weight:600;letter-spacing:.9px;text-transform:uppercase;padding:3px 10px;border-radius:999px;margin-bottom:10px}
+.chip.inc{background:var(--good-soft);color:var(--good)}
+.chip.ext{background:var(--accent-soft);color:var(--accent)}
+.chip.open{background:var(--warn-soft);color:var(--warn)}
+.chip.work{background:var(--sunk);color:var(--muted)}
+.fgroup ul{margin:0;padding-left:20px;font-size:.88rem;color:var(--muted);line-height:1.55}
+.fgroup li{margin-bottom:7px}
+.fgroup li:last-child{margin-bottom:0}
+.fgroup code{font-family:var(--font-num);font-size:.86em;background:var(--sunk);padding:1px 5px;border-radius:3px;color:var(--ink)}
+
+details{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 24px;margin-bottom:14px}
+summary{cursor:pointer;font-weight:600;font-size:.95rem;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"+ ";color:var(--accent);font-family:var(--font-num)}
+details[open] summary::before{content:"− "}
+details .body{padding-top:14px;font-size:.89rem;color:var(--muted);line-height:1.6}
+details .body p{margin:0 0 10px;max-width:68ch}
+details .body p:last-child{margin:0}
+details code{font-family:var(--font-num);font-size:.86em;background:var(--sunk);padding:1px 5px;border-radius:3px;color:var(--ink)}
+details ul{margin:0 0 10px;padding-left:20px}
+details li{margin-bottom:5px}
+
+.cta{background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:26px;margin-top:28px;display:flex;flex-direction:column;gap:12px}
+.cta h2{margin:0;font-size:1.15rem;font-weight:600}
+.cta p{margin:0;font-size:.92rem;color:var(--muted);max-width:62ch}
+.cta code{font-family:var(--font-num);font-size:.86em;background:var(--sunk);padding:1px 5px;border-radius:3px;color:var(--ink)}
+
+footer{margin-top:36px;padding-top:18px;border-top:1px solid var(--line);font-size:.8rem;color:var(--muted);line-height:1.6}
+footer p{margin:0 0 8px;max-width:72ch}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Microsoft Security</span>
+  <h1>The ISOC calculator</h1>
+  <p class="stand">What the Integrated Security Operations Center costs, what comes with it, and what it does to your bill. Put your own numbers in. You get a range rather than one figure, because a piece of this has not been published yet.</p>
+</header>
+
+<div class="cols">
+
+  <!-- ============ INPUTS ============ -->
+  <div class="card">
+    <h2>Your estate</h2>
+    <p class="hint">Gigabytes a day, averaged.</p>
+
+    <label class="toggle" for="hasSentinel">
+      <input type="checkbox" id="hasSentinel" checked>
+      <span class="tlab">We run Microsoft Sentinel today
+        <small>Leave this on and the page compares staying against moving. Turn it off and it just prices ISOC, because there is no current bill to compare with.</small>
+      </span>
+    </label>
+
+    <div class="presets only-sentinel">
+      <button type="button" data-preset="balanced">Balanced</button>
+      <button type="button" data-preset="seatrich">Seat-rich</button>
+      <button type="button" data-preset="thirdparty">Third-party heavy</button>
+      <button type="button" data-preset="commitment">On a commitment tier</button>
+    </div>
+
+    <div class="field only-sentinel">
+      <div class="flabel"><label for="seats">Licensed users</label><span class="unit">E5 / E7 seats</span></div>
+      <div class="frow">
+        <input type="number" id="seats" min="0" max="200000" step="100" value="5000">
+        <input type="range" id="seatsR" min="0" max="50000" step="100" value="5000" aria-label="Licensed users slider">
+      </div>
+      <p class="note">Drives the free ingestion allowance you give up.</p>
+    </div>
+
+    <div class="field only-sentinel">
+      <div class="flabel"><label for="defender">Defender raw logs</label><span class="unit">GB / day</span></div>
+      <div class="frow">
+        <input type="number" id="defender" min="0" max="5000" step="1" value="20">
+        <input type="range" id="defenderR" min="0" max="300" step="1" value="20" aria-label="Defender raw logs slider">
+      </div>
+      <p class="note">Endpoint, Identity, Office 365, Cloud Apps raw tables you ingest today. Not ingested at all under ISOC.</p>
+    </div>
+
+    <div class="field">
+      <div class="flabel"><label for="disputed">Unconfirmed Microsoft tables</label><span class="unit">GB / day</span></div>
+      <div class="frow">
+        <input type="number" id="disputed" min="0" max="5000" step="1" value="30">
+        <input type="range" id="disputedR" min="0" max="300" step="1" value="30" aria-label="Unconfirmed Microsoft tables slider">
+      </div>
+      <p class="note"><code>SigninLogs</code>, non-interactive sign-ins, <code>AuditLogs</code>, <code>MicrosoftGraphActivityLogs</code>, Azure diagnostics. Nobody will confirm whether these are included.</p>
+    </div>
+
+    <div class="field">
+      <div class="flabel"><label for="thirdparty">Non-Microsoft data</label><span class="unit">GB / day</span></div>
+      <div class="frow">
+        <input type="number" id="thirdparty" min="0" max="5000" step="1" value="50">
+        <input type="range" id="thirdpartyR" min="0" max="500" step="1" value="50" aria-label="Non-Microsoft data slider">
+      </div>
+      <p class="note">Firewalls, cloud platforms, SaaS, network gear.</p>
+    </div>
+
+    <div class="subhead">Rates and assumptions</div>
+
+    <div class="field only-sentinel">
+      <div class="flabel"><label for="rateSentinel">Sentinel rate</label><span class="unit">$ / GB</span></div>
+      <div class="frow"><input type="number" id="rateSentinel" min="0" max="20" step="0.05" value="4.30"><span class="note" style="flex:1">Pay-as-you-go list. Lower it if you hold a commitment tier.</span></div>
+    </div>
+
+    <div class="field">
+      <div class="flabel"><label for="rateIsoc">ISOC rate</label><span class="unit">$ / GB</span></div>
+      <div class="frow"><input type="number" id="rateIsoc" min="0" max="20" step="0.05" value="2.40"><span class="note" style="flex:1">Announced rate for non-Microsoft ingestion.</span></div>
+    </div>
+
+    <div class="field only-sentinel">
+      <div class="flabel"><label for="benefit">Benefit allowance</label><span class="unit">MB / user / day</span></div>
+      <div class="frow"><input type="number" id="benefit" min="0" max="50" step="0.5" value="5"><span class="note" style="flex:1">The E5 and E7 Sentinel benefit, applied to eligible Microsoft data.</span></div>
+    </div>
+  </div>
+
+  <!-- ============ RESULTS ============ -->
+  <div>
+    <div class="verdict" id="verdict">
+      <span class="vtag" id="vtag">Verdict</span>
+      <h3 id="vhead">Enter your figures</h3>
+      <p id="vbody">The model updates as you type.</p>
+    </div>
+
+    <div class="allow only-sentinel" id="allowBox">
+      <span class="aname">Your benefit allowance</span>
+      <span class="anum" id="allowNum">0 GB / day</span>
+      <span class="atext" id="allowText"></span>
+    </div>
+
+    <div class="tiles">
+      <div class="tile only-sentinel">
+        <span class="tname">Stay on Sentinel</span>
+        <span class="tnum" id="outStay">$0</span>
+        <span class="tsub" id="outStayYr">per month</span>
+      </div>
+      <div class="tile">
+        <span class="tname">ISOC, best case</span>
+        <span class="tnum" id="outBest">$0</span>
+        <span class="tsub" id="outBestYr">if the unconfirmed tables are included</span>
+      </div>
+      <div class="tile">
+        <span class="tname">ISOC, worst case</span>
+        <span class="tnum" id="outWorst">$0</span>
+        <span class="tsub" id="outWorstYr">if they are billed as third-party</span>
+      </div>
+    </div>
+
+    <div class="bars">
+      <h2>Monthly ingestion cost</h2>
+      <p class="hint">Bars are drawn to the same scale.</p>
+      <div class="bar alt only-sentinel"><span class="blab">Stay on Sentinel</span><span class="btrack"><span class="bfill alt" id="barStay" style="width:0%"></span></span><span class="bval" id="barStayV">$0</span></div>
+      <div class="bar"><span class="blab">ISOC, best case</span><span class="btrack"><span class="bfill" id="barBest" style="width:0%"></span></span><span class="bval" id="barBestV">$0</span></div>
+      <div class="bar"><span class="blab">ISOC, worst case</span><span class="btrack"><span class="bfill" id="barWorst" style="width:0%"></span></span><span class="bval" id="barWorstV">$0</span></div>
+    </div>
+
+    <div class="swing" id="swingBox">
+      <div class="sname">What the unanswered question is worth</div>
+      <div class="snum" id="swingNum">$0 a year</div>
+      <p>That is the annual gap between the unconfirmed Microsoft tables being included and being billed at the non-Microsoft rate. It is the single number to get in writing before anyone signs off a business case.</p>
+    </div>
+
+    <!-- ============ WHAT YOU GET ============ -->
+    <div class="feat">
+      <h2>What opting in actually gets you</h2>
+      <p class="hint">On E5, E7 or the Defender suite. Checked against Microsoft's published documentation in October 2026, which is still moving.</p>
+
+      <div class="fgroup">
+        <span class="chip inc">Included</span>
+        <ul>
+          <li>Microsoft security data from Defender for Endpoint, Office 365, Identity, Cloud Apps and Cloud, with no workspace ingestion charge</li>
+          <li>Entra ID Protection logs, plus Azure activity and audit logs and Office 365 activity and audit logs through their connectors</li>
+          <li>90 days of retention on that data, against 30 in Defender today</li>
+          <li>Custom detections as the rule engine, authored and run in the Defender portal</li>
+          <li>Cases, workbooks and UEBA, at no extra cost</li>
+          <li>Playbooks written for you by an agent. These no longer consume Security Compute Units</li>
+          <li>A built-in data lake for cheap long-term storage, with advanced hunting over what sits in it</li>
+        </ul>
+      </div>
+
+      <div class="fgroup">
+        <span class="chip ext">Costs extra</span>
+        <ul>
+          <li>Non-Microsoft data at $2.40 a gigabyte. That is the carrot: roughly half the Sentinel pay-as-you-go rate</li>
+          <li>Extending Defender retention to 180 days, at $1.20 a gigabyte</li>
+          <li>Microsoft Fabric capacity, if you want the advanced analytics over lake data. Separate product, separate bill</li>
+          <li>Retention past the included window, and anything you promote back into the analytics tier</li>
+          <li>An active Azure subscription. The workspace still lands in one, even though you create it from the Defender portal</li>
+        </ul>
+      </div>
+
+      <div class="fgroup">
+        <span class="chip open">Not published yet</span>
+        <ul>
+          <li>Whether <code>SigninLogs</code>, non-interactive sign-ins, <code>AuditLogs</code>, <code>MicrosoftGraphActivityLogs</code> and Azure diagnostic logs are included. None of them are named anywhere</li>
+          <li>What Perception agents will cost</li>
+          <li>Whether the Sentinel MCP server reaches an ISOC workspace, which decides how you connect your own agents to the data</li>
+        </ul>
+      </div>
+
+      <div class="fgroup">
+        <span class="chip work">Work you inherit</span>
+        <ul>
+          <li>Defender raw logs never arrive in a workspace, so detections over them are custom detections in the portal and not analytics rules. Content built the old way gets rewritten</li>
+          <li>Automation rules with incident or alert triggers are planned rather than shipped. Alerts without incidents, and alert suppression, are not supported</li>
+          <li>Cross-workspace rules stay where they are</li>
+          <li>Playbook code an agent wrote runs with real permissions, so it needs review, least privilege and change control like any other code</li>
+        </ul>
+      </div>
+    </div>
+
+    <details>
+      <summary>How this is calculated</summary>
+      <div class="body">
+        <p class="only-sentinel"><strong>Staying on Sentinel.</strong> Your Defender raw logs and the unconfirmed Microsoft tables are both paid today. The benefit allowance, seats multiplied by 5 MB a day, is applied against that Microsoft total first. Whatever is left, plus all your non-Microsoft data, is billed at the Sentinel rate.</p>
+        <p class="only-greenfield"><strong>No Sentinel today.</strong> There is no current bill to compare against, so the page prices ISOC on its own. You have no benefit allowance to give up either, which removes the thing that makes this decision hard for existing Sentinel customers.</p>
+        <p><strong>ISOC, best case.</strong> Defender data is not ingested into a workspace at all, so it is not a line on the bill. The unconfirmed tables are assumed to be covered by the included Microsoft data. Only your non-Microsoft data is billed, at the ISOC rate.</p>
+        <p><strong>ISOC, worst case.</strong> Same, except the unconfirmed tables fall under additional Microsoft and non-Microsoft security data and are billed at the ISOC rate alongside your third-party feeds.</p>
+        <p>Months are 30.44 days. Figures are ingestion only and exclude retention, the data lake, Fabric capacity and anything priced per user.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Why there are two ISOC figures</summary>
+      <div class="body">
+        <p>Microsoft names the supported Microsoft security data specifically: Defender for Endpoint, Office 365, Identity, Cloud Apps and Cloud, Microsoft Entra Identity Protection logs, Azure Activity and audit logs through a connector, and Office 365 Activity and audit logs through a connector.</p>
+        <p>Entra Identity Protection logs are the risk detection table. They are not <code>SigninLogs</code>, and they are not non-interactive sign-ins, which in most tenants are among the largest tables in the workspace. <code>MicrosoftGraphActivityLogs</code> and Azure diagnostic logs are not named anywhere either.</p>
+        <p>Those unnamed tables fall into the next section of the same documentation page, covering additional Microsoft and non-Microsoft security data through the 500+ connectors, where additional ingestion charges might apply.</p>
+        <p>So they are either free or they are $2.40 a gigabyte, and that is a question for your account team rather than for a calculator.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>What this model deliberately leaves out</summary>
+      <div class="body">
+        <ul>
+          <li>Retention beyond the included window, and the data lake tier</li>
+          <li>Microsoft Fabric capacity, which is a separate purchase</li>
+          <li>The engineering cost of moving detection content, which is usually larger than the ingestion difference in year one</li>
+          <li>Commitment tier discounts, unless you lower the Sentinel rate yourself</li>
+          <li>Anything announced after this page was written</li>
+        </ul>
+        <p>A lower bill is not the same as a better outcome. If moving costs you a detection capability you rely on, the saving is not a saving.</p>
+      </div>
+    </details>
+
+    <div class="cta">
+      <h2>Before you act on this</h2>
+      <p class="only-sentinel">Pull your real numbers before you take a decision to anyone with a budget. Run <code>Usage</code> over the last 90 days split by table and by solution, separate the Defender tables from everything else, and check which of your Entra and Azure diagnostic tables are in scope. The output of this page is a direction of travel, not a quote.</p>
+      <p class="only-greenfield">Get an estimate of your non-Microsoft volumes before you commit to a figure. Firewall and proxy logs are usually larger than people expect, and they are the only thing you pay for here. The output of this page is a direction of travel, not a quote.</p>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>Rates are US list prices in USD and were correct when this page was written. Preview scope and pricing move quickly, so check current Microsoft documentation before making purchasing decisions. This model is a planning aid and not a quotation.</p>
+</footer>
+</div>
+
+<script>
+(function(){
+  var ids = ["seats","defender","disputed","thirdparty","rateSentinel","rateIsoc","benefit"];
+  var el = {};
+  ids.forEach(function(k){ el[k] = document.getElementById(k); });
+  var paired = ["seats","defender","disputed","thirdparty"];
+  var sent = document.getElementById("hasSentinel");
+
+  var presets = {
+    balanced:   {seats:5000,  defender:20, disputed:30, thirdparty:50,  rateSentinel:4.30},
+    seatrich:   {seats:25000, defender:10, disputed:25, thirdparty:8,   rateSentinel:4.30},
+    thirdparty: {seats:1500,  defender:10, disputed:12, thirdparty:140, rateSentinel:4.30},
+    commitment: {seats:30000, defender:15, disputed:50, thirdparty:60,  rateSentinel:1.80}
+  };
+
+  function num(x){ var v = parseFloat(x); return isFinite(v) && v > 0 ? v : 0; }
+  function money(v){ return "$" + Math.round(v).toLocaleString("en-US"); }
+
+  function calc(){
+    var hasSent = sent.checked;
+    document.body.setAttribute("data-mode", hasSent ? "compare" : "greenfield");
+
+    var seats = num(el.seats.value),
+        D = num(el.defender.value),
+        E = num(el.disputed.value),
+        N = num(el.thirdparty.value),
+        rS = num(el.rateSentinel.value),
+        rI = num(el.rateIsoc.value),
+        ben = num(el.benefit.value);
+
+    var allowance = seats * ben / 1024;            // GB/day
+    var msPaidToday = D + E;
+    var msBillable = Math.max(0, msPaidToday - allowance);
+
+    var stayDay  = (msBillable + N) * rS;
+    var bestDay  = N * rI;
+    var worstDay = (N + E) * rI;
+
+    var M = 30.44;
+    var stay = stayDay * M, best = bestDay * M, worst = worstDay * M;
+    var swingYear = (worstDay - bestDay) * 365;
+
+    document.getElementById("outStay").textContent  = money(stay);
+    document.getElementById("outBest").textContent  = money(best);
+    document.getElementById("outWorst").textContent = money(worst);
+    document.getElementById("outStayYr").textContent  = money(stayDay*365)  + " a year";
+    document.getElementById("outBestYr").textContent  = money(bestDay*365)  + " a year";
+    document.getElementById("outWorstYr").textContent = money(worstDay*365) + " a year";
+
+    var max = Math.max(best, worst, hasSent ? stay : 0, 1);
+    function bar(id, v){
+      document.getElementById("bar"+id).style.width = (v/max*100) + "%";
+      document.getElementById("bar"+id+"V").textContent = money(v);
+    }
+    bar("Stay", stay); bar("Best", best); bar("Worst", worst);
+
+    document.getElementById("swingNum").textContent = money(swingYear) + " a year";
+
+    var aNum = document.getElementById("allowNum"), aTxt = document.getElementById("allowText");
+    aNum.textContent = allowance.toFixed(1) + " GB / day";
+    if (allowance === 0){
+      aTxt.textContent = "Enter a seat count to see what the benefit covers.";
+    } else if (msPaidToday === 0){
+      aTxt.textContent = "You have no paid Microsoft data for it to offset, so it is doing nothing for you today.";
+    } else if (allowance >= msPaidToday){
+      aTxt.textContent = "It already covers all " + msPaidToday.toFixed(0)
+        + " GB a day of paid Microsoft data, with " + (allowance - msPaidToday).toFixed(0)
+        + " GB a day spare. You pay nothing for Microsoft data today, so moving has less to win back.";
+    } else {
+      aTxt.textContent = "It covers " + Math.round(allowance / msPaidToday * 100)
+        + "% of your paid Microsoft data. The remaining " + msBillable.toFixed(0)
+        + " GB a day is billed at the Sentinel rate.";
+    }
+
+    var vb = document.getElementById("verdict"),
+        vt = document.getElementById("vtag"),
+        vh = document.getElementById("vhead"),
+        vp = document.getElementById("vbody");
+
+    function blank(){
+      vb.className = "verdict";
+      vb.style.borderColor = "var(--line)"; vb.style.background = "var(--surface)";
+      vt.textContent = "Verdict"; vt.style.color = "var(--muted)";
+      vh.textContent = "Enter your figures"; vh.style.color = "var(--ink)";
+      vp.textContent = "The model updates as you type."; vp.style.color = "var(--muted)";
+    }
+    function live(){
+      vb.style.borderColor = ""; vb.style.background = "";
+      vt.style.color = ""; vh.style.color = ""; vp.style.color = "";
+    }
+
+    // ---- No Sentinel today: price ISOC, no comparison to draw ----
+    if (!hasSent){
+      if (best === 0 && worst === 0){ blank(); return; }
+      live();
+      vb.className = "verdict plain";
+      vt.textContent = "Your ISOC cost";
+      if (E === 0){
+        vh.textContent = money(best) + " a month";
+        vp.textContent = "That is your non-Microsoft data at the ISOC rate. Everything Microsoft names as included costs nothing on top of the licence. If you expect to ingest Entra sign-in logs or Azure diagnostics, put an estimate in the unconfirmed tables field, because those are the ones nobody will confirm.";
+      } else {
+        vh.textContent = money(best) + " to " + money(worst) + " a month";
+        vp.textContent = "The low end assumes the unconfirmed Microsoft tables are part of what you get. The high end assumes they are billed at the ISOC rate alongside your third-party feeds. With no Sentinel estate behind you there is no benefit allowance to give up, so nothing sits on the other side of the ledger: this is the cheaper way into Microsoft security operations from where you are.";
+      }
+      return;
+    }
+
+    // ---- Has Sentinel: stay vs move ----
+    if (stay === 0 && best === 0 && worst === 0){ blank(); return; }
+    live();
+
+    var spread = Math.max(Math.abs(stay-best), Math.abs(stay-worst));
+    if (spread < 25){
+      vb.className = "verdict wait";
+      vt.textContent = "Too close to call";
+      vh.textContent = "Cost will not decide this for you";
+      vp.textContent = "At your volumes the three scenarios land within " + money(spread)
+        + " a month of each other. Pick on capability, operational fit and the detection content work instead, because the money is noise.";
+    } else if (worst <= stay){
+      vb.className = "verdict good";
+      vt.textContent = "Clear decision";
+      vh.textContent = "Moving wins either way";
+      vp.textContent = "Even if every unconfirmed table is billed at the non-Microsoft rate, ISOC costs you "
+        + money(stay - worst) + " a month less than staying. Best case you save " + money(stay - best)
+        + " a month. The unanswered question changes the size of the win, not the decision.";
+    } else if (best >= stay){
+      vb.className = "verdict good";
+      vt.textContent = "Clear decision";
+      vh.textContent = "Staying wins either way";
+      vp.textContent = "Even on the most generous reading, ISOC costs " + money(best - stay)
+        + " a month more than your current position. Your benefit allowance is doing more work than the cheaper third-party rate can replace.";
+    } else {
+      vb.className = "verdict wait";
+      vt.textContent = "Not decidable yet";
+      vh.textContent = "This turns entirely on the unconfirmed tables";
+      vp.textContent = "If they are included you save " + money(stay - best)
+        + " a month. If they are billed as third-party you pay " + money(worst - stay)
+        + " a month more. Your current position sits inside the range, so the answer depends on information Microsoft has not published. Get it in writing, table by table, before deciding.";
+    }
+  }
+
+  paired.forEach(function(k){
+    var r = document.getElementById(k + "R");
+    el[k].addEventListener("input", function(){
+      if (r){ r.value = Math.min(num(el[k].value), parseFloat(r.max)); }
+      calc();
+    });
+    if (r) r.addEventListener("input", function(){ el[k].value = r.value; calc(); });
+  });
+  ["rateSentinel","rateIsoc","benefit"].forEach(function(k){
+    el[k].addEventListener("input", calc);
+  });
+  sent.addEventListener("change", calc);
+
+  document.querySelectorAll(".presets button").forEach(function(b){
+    b.addEventListener("click", function(){
+      var p = presets[b.dataset.preset];
+      Object.keys(p).forEach(function(k){
+        el[k].value = p[k];
+        var r = document.getElementById(k + "R");
+        if (r) r.value = Math.min(p[k], parseFloat(r.max));
+      });
+      calc();
+    });
+  });
+
+  calc();
+})();
+</script>
+
+</body>
+</html>

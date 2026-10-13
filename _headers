@@ -1,0 +1,9 @@
+# Cloudflare Pages reads this at build time and applies it to responses.
+# The page is one self-contained HTML file: inline style, inline script,
+# no images, no fetch calls. Google Fonts is the only external request.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=()
+  Content-Security-Policy: default-src 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'
